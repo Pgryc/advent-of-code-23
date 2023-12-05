@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func check(e error) {
@@ -28,6 +29,29 @@ func parseNumber(text string) int {
 	return result
 }
 
+func parseNumberWithTextDigits(text string) int {
+	replace := map[string]string{
+		"one":   "1ne",
+		"two":   "2wo",
+		"three": "3hree",
+		"four":  "4our",
+		"five":  "5ive",
+		"six":   "6ix",
+		"seven": "7even",
+		"eight": "8ight",
+		"nine":  "9ine",
+	}
+	for i := 0; i < len(text); i++ {
+		for s, r := range replace {
+			endIndex := min(i+len(s), len(text))
+			if text[i:endIndex] == s {
+				text = strings.Replace(text, s, r, 1)
+			}
+		}
+	}
+	return parseNumber(text)
+}
+
 func main() {
 	file, err := os.Open("01/input.txt")
 	check(err)
@@ -35,11 +59,15 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 
-	sum := 0
+	sum, sum2 := 0, 0
 	for scanner.Scan() {
-		sum += parseNumber(scanner.Text())
+		text := scanner.Text()
+		sum += parseNumber(text)
+		sum2 += parseNumberWithTextDigits(text)
 	}
 
 	fmt.Println("The sum of parsed numbers:")
 	fmt.Println(sum)
+	fmt.Println("The sum of parsed numbers, including textual digits:")
+	fmt.Println(sum2)
 }

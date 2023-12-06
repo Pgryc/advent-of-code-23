@@ -49,6 +49,31 @@ func parse(text string) int {
 	return 0
 }
 
+func power(text string) int {
+	min := map[string]int{
+		"red":   0,
+		"green": 0,
+		"blue":  0,
+	}
+	gamesData := strings.Split(text, ":")[1]
+	games := strings.Split(gamesData, ";")
+
+	for _, g := range games {
+		cubes := strings.Split(g, ",")
+		for _, cube := range cubes {
+			cube = strings.Trim(cube, " ")
+			cubeCount, err := strconv.Atoi(strings.Split(cube, " ")[0])
+			check(err)
+			cubeColor := strings.Split(cube, " ")[1]
+
+			if cubeCount > min[cubeColor] {
+				min[cubeColor] = cubeCount
+			}
+		}
+	}
+	return min["red"] * min["green"] * min["blue"]
+}
+
 func main() {
 	file, err := os.Open("02/input.txt")
 	check(err)
@@ -56,10 +81,12 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 
-	sum := 0
+	sum, sum2 := 0, 0
 	for scanner.Scan() {
 		sum += parse(scanner.Text())
+		sum2 += power(scanner.Text())
 	}
 
 	fmt.Println(sum)
+	fmt.Println(sum2)
 }

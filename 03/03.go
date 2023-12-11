@@ -8,6 +8,88 @@ import (
 	"unicode"
 )
 
+type col struct {
+	start int
+	end   int
+}
+
+type number struct {
+	value int
+	row   int
+	col   col
+}
+
+type symbol struct {
+	row                int
+	col                int
+	neighboringNumbers []number
+}
+
+func calculateSums(symbols []symbol) (sum int, sum2 int) {
+	sum = 0
+	sum2 = 0
+	for _, symbol := range symbols {
+		for _, number := range symbol.neighboringNumbers {
+			sum += number.value
+		}
+		if len(symbol.neighboringNumbers) == 2 {
+			sum2 += symbol.neighboringNumbers[0].value * symbol.neighboringNumbers[1].value
+		}
+
+	}
+	return
+}
+
+func findNeighboring(numbers []number, symbols []symbol) ([]number, []symbol) {
+	for i := 0; i < len(symbols); i++ {
+		for j := 0; j < len(numbers); j++ {
+			if (numbers[j].row-1 <= symbols[i].row) &&
+				(symbols[i].row <= numbers[j].row+1) &&
+				(numbers[j].col.start-1 <= symbols[i].col) &&
+				(symbols[i].col <= numbers[j].col.end+1) {
+				symbols[i].neighboringNumbers = append(symbols[i].neighboringNumbers, numbers[j])
+			}
+		}
+	}
+	return numbers, symbols
+}
+
+func parseSchematic(schematic []string) (numbers []number, symbols []symbol) {
+	for i, line := range schematic {
+		for j := 0; j < len(line); j++ {
+			isDigit := unicode.IsDigit(rune(line[j]))
+			isDot := string(rune(line[j])) == "."
+
+			if isDigit {
+				lastNumberDigit := j
+				for lastNumberDigit+1 < len(line) && unicode.IsDigit(rune(line[lastNumberDigit+1])) {
+					lastNumberDigit++
+				}
+				nValue, err := strconv.Atoi(string(line[j : lastNumberDigit+1]))
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				n := number{
+					value: nValue,
+					row:   i,
+					col:   col{start: j, end: lastNumberDigit},
+				}
+				numbers = append(numbers, n)
+				j = lastNumberDigit
+			} else if !isDigit && !isDot {
+				s := symbol{
+					row: i,
+					col: j,
+				}
+				symbols = append(symbols, s)
+			}
+		}
+	}
+
+	return
+}
+
 func loadSchematic(file *os.File) []string {
 	scanner := bufio.NewScanner(file)
 	var schematic []string
@@ -18,55 +100,6 @@ func loadSchematic(file *os.File) []string {
 	return schematic
 }
 
-func isPartNo(surroundings []string) bool {
-	for _, text := range surroundings {
-		for _, character := range text {
-			if string(character) != "." {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func countNumbers(schematic []string) int {
-	sum := 0
-	for i, line := range schematic {
-		for j := 0; j < len(line); j++ {
-			if unicode.IsDigit(rune(line[j])) {
-				var surroundings []string
-				lastNumberDigit := j
-				for lastNumberDigit+1 < len(line) && unicode.IsDigit(rune(line[lastNumberDigit+1])) {
-					lastNumberDigit++
-				}
-
-				if j > 0 {
-					surroundings = append(surroundings, string(line[j-1]))
-				}
-				if lastNumberDigit < len(line)-1 {
-					surroundings = append(surroundings, string(line[lastNumberDigit+1]))
-				}
-				if i > 0 {
-					surroundings = append(surroundings, schematic[i-1][max(0, j-1):min(lastNumberDigit+2, len(line))])
-				}
-				if i < len(schematic)-1 {
-					surroundings = append(surroundings, schematic[i+1][max(0, j-1):min(lastNumberDigit+2, len(line))])
-				}
-
-				if isPartNo(surroundings) {
-					partNo, err := strconv.Atoi(string(line[j : lastNumberDigit+1]))
-					if err != nil {
-						fmt.Println(err)
-					}
-					sum += partNo
-				}
-				j = lastNumberDigit
-			}
-		}
-	}
-	return sum
-}
-
 func main() {
 	file, err := os.Open("03/input.txt")
 	if err != nil {
@@ -75,7 +108,13 @@ func main() {
 	}
 
 	schematic := loadSchematic(file)
+	numbers, symbols := parseSchematic(schematic)
+	fmt.Println(numbers)
+	fmt.Println(symbols)
 
-	sum := countNumbers(schematic)
+	numbers, symbols = findNeighboring(numbers, symbols)
+
+	sum, sum2 := calculateSums(symbols)
 	fmt.Println(sum)
+	fmt.Println(sum2)
 }

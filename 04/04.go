@@ -37,13 +37,14 @@ func simpleGeneric[T comparable](a []T, b []T) []T {
 	return set
 }
 
-func countCardPoints(card scaratchcard) (points int) {
+func countCardPoints(card scaratchcard) (matches int, points int) {
 	matching := simpleGeneric(card.winning, card.numbers)
 	if len(matching) > 0 {
 		points = int(math.Pow(2, float64(len(matching)-1)))
 	} else {
 		points = 0
 	}
+	matches = len(matching)
 	return
 }
 
@@ -84,6 +85,11 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	// go comment
+	// start with array of 1 card each
+	// for each card, you get 1 of <points> next cards
+	//
+	// how much are there at the end
 
 	scanner := bufio.NewScanner(file)
 
@@ -92,11 +98,28 @@ func main() {
 	for scanner.Scan() {
 		cards = append(cards, parseCardData(scanner.Text()))
 	}
-	sum := 0
-	for _, card := range cards {
-		sum += countCardPoints(card)
+	size := len(cards)
+	numberOfCards := make([]int, size)
+
+	for i := 0; i < len(numberOfCards); i++ {
+		numberOfCards[i] = 1
+	}
+
+	sum, sum2 := 0, 0
+	for i, card := range cards {
+		matches, currentCardPoints := countCardPoints(card)
+		sum += currentCardPoints
+
+		for j := 1; j <= matches && j+i < len(cards); j++ {
+			numberOfCards[i+j] += numberOfCards[i]
+		}
+	}
+
+	for i := 0; i < len(numberOfCards); i++ {
+		sum2 += numberOfCards[i]
 	}
 
 	fmt.Println(cards)
 	fmt.Println(sum)
+	fmt.Println(sum2)
 }
